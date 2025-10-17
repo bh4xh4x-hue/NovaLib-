@@ -282,9 +282,14 @@ NovaLib.MakeWindow = function(self, opts)
     return win
 end
 
+-- ===== Circle click and password logic =====
+script._NovaUnlocked = false
+
 circleBtn.MouseButton1Click:Connect(function()
     if script._NovaUnlocked then
-        if NovaLib.MainWindow then NovaLib.MainWindow:Show() end
+        if NovaLib.MainWindow then 
+            NovaLib.MainWindow:Show()
+        end
     else
         passwordModal.Open()
     end
@@ -292,9 +297,11 @@ end)
 
 passwordModal.Submit.MouseButton1Click:Connect(function()
     if passwordModal.Input.Text == MASTER_PASSWORD then
-        passwordModal.Close()
         script._NovaUnlocked = true
-        if NovaLib.MainWindow then NovaLib.MainWindow:Show() end
+        passwordModal.Close()
+        if NovaLib.MainWindow then 
+            NovaLib.MainWindow:Show() 
+        end
     else
         passwordModal.Feedback.Text = "Incorrect password!"
     end
