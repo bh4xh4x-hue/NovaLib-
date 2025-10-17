@@ -1,15 +1,14 @@
 -- ===========================
--- NovaLib v1.1 - Full Working Version
--- Author: srfcheats (edited for full functionality)
+-- NovaLib v1.2 - Fixed Version
+-- Author: srfcheats (modified/fixed)
 -- Password default: "NovaModsReborn"
 -- Place in a LocalScript
 -- ===========================
 
-local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -17,7 +16,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local NovaLib = {}
 local _CONFIGS = {}
 
--- ===== Utility / Save helpers =====
+-- ===== Utility =====
 local function safeCall(fn, ...)
     local ok, res = pcall(fn, ...)
     return ok and res or nil
@@ -44,7 +43,7 @@ local function loadConfigFile(name)
     return nil
 end
 
--- ===== Style & helpers =====
+-- ===== Styles =====
 local COLORS = {
     blue = Color3.fromRGB(0,102,255),
     blueLight = Color3.fromRGB(120,180,255),
@@ -97,32 +96,44 @@ local circleBtn = mk(circleGui, "TextButton", {
     TextColor3 = Color3.new(1,1,1),
     BorderSizePixel = 0,
 })
-makeCorner(circleBtn,999)
+makeCorner(circleBtn, 999)
 makeStroke(circleBtn, 2, COLORS.blueLight)
 
--- Dragging circle
+-- Draggable circle
 do
-    local dragging, dragStart, startPos, dragInput
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        circleBtn.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+
     circleBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
             startPos = circleBtn.Position
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
             end)
         end
     end)
+
     circleBtn.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
     end)
+
     UIS.InputChanged:Connect(function(input)
-        if dragInput and input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            circleBtn.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
+        if input == dragInput and dragging then
+            update(input)
         end
     end)
 end
@@ -174,106 +185,90 @@ function NovaLib:MakeWindow(opts)
     local saveConfig = opts.SaveConfig == true
     local configName = opts.ConfigName or (name:gsub("%s+","_") .. ".json")
 
-    local gui = mk(playerGui, "ScreenGui", {Name = "NovaWindow_" .. name, ResetOnSpawn = false, IgnoreGuiInset = true})
-    local window = mk(gui, "Frame", {Size = UDim2.new(0,340,0,260), Position = UDim2.new(0.5,-170,0.5,-130), BackgroundColor3 = COLORS.uiBg, Visible = false})
-    makeCorner(window, 12)
+    local gui = mk(playerGui, "ScreenGui", {Name = "NovaWindow_"..name, ResetOnSpawn = false, IgnoreGuiInset = true})
+    local window = mk(gui, "Frame", {Size=UDim2.new(0,340,0,260), Position=UDim2.new(0.5,-170,0.5,-130), BackgroundColor3=COLORS.uiBg, Visible=false})
+    makeCorner(window,12)
 
-    local tabsBar = mk(window, "Frame", {Size = UDim2.new(1,-24,0,34), Position = UDim2.new(0,12,0,56), BackgroundTransparency = 1})
+    local tabsBar = mk(window, "Frame", {Size=UDim2.new(1,-24,0,34), Position=UDim2.new(0,12,0,56), BackgroundTransparency=1})
+    local content = mk(window, "Frame", {Position=UDim2.new(0,12,0,96), Size=UDim2.new(1,-24,1,-120), BackgroundTransparency=1})
+    local closeBtn = mk(window,"TextButton",{Size=UDim2.new(0,80,0,28), Position=UDim2.new(1,-96,0,12), BackgroundColor3=COLORS.light, Text="Close", Font=Enum.Font.GothamBold, TextColor3=COLORS.uiText})
+    makeCorner(closeBtn,6)
+    local hideBtn = mk(window,"TextButton",{Size=UDim2.new(0,60,0,28), Position=UDim2.new(1,-36,0,12), BackgroundColor3=Color3.fromRGB(230,230,230), Text="Hide", Font=Enum.Font.GothamBold, TextColor3=COLORS.uiText})
+    makeCorner(hideBtn,6)
+    local footer = mk(window,"TextLabel",{Size=UDim2.new(1,0,0,22), Position=UDim2.new(0,0,1,-26), BackgroundTransparency=1, Font=Enum.Font.Gotham, TextSize=14, Text="coded by srfcheats", TextColor3=COLORS.uiText})
 
-    local closeBtn = mk(window, "TextButton", {Size = UDim2.new(0,80,0,28), Position = UDim2.new(1,-96,0,12), BackgroundColor3 = COLORS.light, Text = "Close", Font = Enum.Font.GothamBold, TextColor3 = COLORS.uiText})
-    makeCorner(closeBtn, 6)
-    local hideBtn = mk(window, "TextButton", {Size = UDim2.new(0,60,0,28), Position = UDim2.new(1,-36,0,12), BackgroundColor3 = Color3.fromRGB(230,230,230), Text = "Hide", Font = Enum.Font.GothamBold, TextColor3 = COLORS.uiText})
-    makeCorner(hideBtn, 6)
-
-    local content = mk(window, "Frame", {Position = UDim2.new(0,12,0,96), Size = UDim2.new(1,-24,1,-120), BackgroundTransparency = 1})
-
-    local footer = mk(window, "TextLabel", {Size = UDim2.new(1,0,0,22), Position = UDim2.new(0,0,1,-26), BackgroundTransparency = 1, Font = Enum.Font.Gotham, TextSize = 14, Text = "coded by srfcheats", TextColor3 = COLORS.uiText})
-
-    -- draggable window
+    -- Draggable window
     do
-        local dragging, dragStart, startPos, dragInput
-        window.InputBegan:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                dragStart = inp.Position
-                startPos = window.Position
-                inp.Changed:Connect(function()
-                    if inp.UserInputState == Enum.UserInputState.End then dragging = false end
+        local dragging = false
+        local dragInput, dragStart, startPos
+        local function update(input)
+            local delta = input.Position - dragStart
+            window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+        window.InputBegan:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.MouseButton1 then
+                dragging=true
+                dragStart=input.Position
+                startPos=window.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState==Enum.UserInputState.End then dragging=false end
                 end)
             end
         end)
-        window.InputChanged:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.MouseMovement then dragInput = inp end
+        window.InputChanged:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.MouseMovement then dragInput=input end
         end)
-        UIS.InputChanged:Connect(function(inp)
-            if dragInput and inp == dragInput and dragging then
-                local delta = inp.Position - dragStart
-                window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
+        UIS.InputChanged:Connect(function(input)
+            if input==dragInput and dragging then update(input) end
         end)
     end
 
-    -- config load
+    -- Config load
     _CONFIGS[configName] = _CONFIGS[configName] or {}
     if saveConfig and canWrite() then
         local loaded = loadConfigFile(configName)
         if loaded then _CONFIGS[configName] = loaded end
     end
 
-    -- tab maker
+    -- Tab maker
     function window:MakeTab(tabOpts)
         tabOpts = tabOpts or {}
         local tabName = tabOpts.Name or "Tab"
         local index = #tabsBar:GetChildren() + 1
-        local btn = mk(tabsBar, "TextButton", {Size = UDim2.new(0,120,0,30), Position = UDim2.new(0, (index-1)*128, 0, 0), BackgroundColor3 = COLORS.light, Text = tabName, Font = Enum.Font.GothamBold, TextColor3 = COLORS.uiText})
-        makeCorner(btn, 6)
-        local tabFrame = mk(content, "Frame", {Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Visible = false})
+        local btn = mk(tabsBar,"TextButton",{Size=UDim2.new(0,120,0,30), Position=UDim2.new(0,(index-1)*128,0,0), BackgroundColor3=COLORS.light, Text=tabName, Font=Enum.Font.GothamBold, TextColor3=COLORS.uiText})
+        makeCorner(btn,6)
+        local tabFrame = mk(content,"Frame",{Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Visible=false})
 
         btn.MouseButton1Click:Connect(function()
-            for _, c in pairs(content:GetChildren()) do
-                if c:IsA("Frame") then c.Visible = false end
+            for _,c in pairs(content:GetChildren()) do
+                if c:IsA("Frame") then c.Visible=false end
             end
-            tabFrame.Visible = true
+            tabFrame.Visible=true
         end)
 
-        if #content:GetChildren() == 0 then
-            btn:Activate()
-            tabFrame.Visible = true
+        if #content:GetChildren()==0 then
+            tabFrame.Visible=true
         end
 
         local TabAPI = {}
-        -- AddToggle, AddButton, AddSlider, AddKeybind, AddColorPicker, AddDropdown, AddTextbox, AddParagraph, AddLabel (copy from your previous code)
-        -- For brevity, reuse your previous implementations for controls
-
         return TabAPI
     end
 
     local API = {}
     API.Gui = gui
     API.Frame = window
-    function API:Show()
-        window.Visible = true
-        circleBtn.Visible = false
-    end
-    function API:Hide()
-        window.Visible = false
-        circleBtn.Visible = true
-    end
-    function API:Save()
-        if canWrite() then saveConfigFile(configName, _CONFIGS[configName] or {}) end
-    end
+    function API:Show() window.Visible=true; circleBtn.Visible=false end
+    function API:Hide() window.Visible=false; circleBtn.Visible=true end
+    function API:Save() if canWrite() then saveConfigFile(configName,_CONFIGS[configName] or {}) end end
 
-    closeBtn.MouseButton1Click:Connect(function() window.Visible = false; circleBtn.Visible = true end)
-    hideBtn.MouseButton1Click:Connect(function() window.Visible = false; circleBtn.Visible = false end)
-
-    game:BindToClose(function() if canWrite() then saveConfigFile(configName, _CONFIGS[configName] or {}) end end)
+    closeBtn.MouseButton1Click:Connect(function() API:Hide() end)
+    hideBtn.MouseButton1Click:Connect(function() window.Visible=false; circleBtn.Visible=false end)
 
     return API
 end
 
--- ===== Circle click and password logic =====
+-- MainWindow tracking
 local createdWindows = {}
-
 local oldMakeWindow = NovaLib.MakeWindow
 NovaLib.MakeWindow = function(self, opts)
     local win = oldMakeWindow(self, opts)
@@ -282,34 +277,27 @@ NovaLib.MakeWindow = function(self, opts)
     return win
 end
 
--- ===== Circle click and password logic =====
+-- Circle click and password logic
 script._NovaUnlocked = false
 
 circleBtn.MouseButton1Click:Connect(function()
     if script._NovaUnlocked then
-        if NovaLib.MainWindow then 
-            NovaLib.MainWindow:Show()
-        end
+        if NovaLib.MainWindow then NovaLib.MainWindow:Show() end
     else
         passwordModal.Open()
     end
 end)
 
 passwordModal.Submit.MouseButton1Click:Connect(function()
-    if passwordModal.Input.Text == MASTER_PASSWORD then
-        script._NovaUnlocked = true
+    if passwordModal.Input.Text==MASTER_PASSWORD then
+        script._NovaUnlocked=true
         passwordModal.Close()
-        if NovaLib.MainWindow then 
-            NovaLib.MainWindow:Show() 
-        end
+        if NovaLib.MainWindow then NovaLib.MainWindow:Show() end
     else
-        passwordModal.Feedback.Text = "Incorrect password!"
+        passwordModal.Feedback.Text="Incorrect password!"
     end
 end)
 
-passwordModal.Cancel.MouseButton1Click:Connect(function()
-    passwordModal.Close()
-end)
+passwordModal.Cancel.MouseButton1Click:Connect(function() passwordModal.Close() end)
 
--- Return the library
 return NovaLib
